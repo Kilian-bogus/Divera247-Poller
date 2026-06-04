@@ -1,4 +1,4 @@
-package de.netzkronehd.divera247.service;
+package de.main.divera247.service;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;

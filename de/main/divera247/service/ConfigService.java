@@ -1,4 +1,4 @@
-package de.netzkronehd.divera247.service;
+package de.main.divera247.service;
 
 import java.io.IOException;
 import java.io.InputStream;

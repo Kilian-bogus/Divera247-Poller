@@ -1,7 +1,7 @@
-package de.netzkronehd.divera247.service;
+package de.main.divera247.service;
 
-import de.netzkronehd.divera247.model.AlarmResponse;
-import de.netzkronehd.divera247.model.LastAlarm;
+import de.main.divera247.model.AlarmResponse;
+import de.main.divera247.model.LastAlarm;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
