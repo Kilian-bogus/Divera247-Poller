@@ -1,0 +1,45 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@10.9.3
+2 info using node@v22.20.0
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:C:\Users\bogus\Desktop\Codex Arbeitsplatz\.npmrc
+5 silly config load:file:C:\Users\bogus\.npmrc
+6 silly config load:file:C:\Users\bogus\Desktop\Codex Arbeitsplatz\etc\npmrc
+7 verbose title npm install lamejs
+8 verbose argv "install" "lamejs" "--no-audit" "--no-fund" "--prefix" "." "--cache" ".\\.npm-cache"
+9 verbose logfile logs-max:10 dir:C:\Users\bogus\Desktop\Codex Arbeitsplatz\.npm-cache\_logs\2026-06-04T20_45_48_155Z-
+10 verbose logfile C:\Users\bogus\Desktop\Codex Arbeitsplatz\.npm-cache\_logs\2026-06-04T20_45_48_155Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+13 silly idealTree buildDeps
+14 silly fetch manifest lamejs@*
+15 silly packumentCache full:https://registry.npmjs.org/lamejs cache-miss
+16 http fetch GET 200 https://registry.npmjs.org/npm 148ms
+17 http fetch GET 200 https://registry.npmjs.org/lamejs 265ms (cache miss)
+18 silly packumentCache full:https://registry.npmjs.org/lamejs set size:undefined disposed:false
+19 silly placeDep ROOT lamejs@1.2.1 OK for:  want: *
+20 silly fetch manifest use-strict@1.0.1
+21 silly packumentCache full:https://registry.npmjs.org/use-strict cache-miss
+22 http fetch GET 200 https://registry.npmjs.org/use-strict 33ms (cache miss)
+23 silly packumentCache full:https://registry.npmjs.org/use-strict set size:undefined disposed:false
+24 silly placeDep ROOT use-strict@1.0.1 OK for: lamejs@1.2.1 want: 1.0.1
+25 silly reify moves {}
+26 http cache use-strict@https://registry.npmjs.org/use-strict/-/use-strict-1.0.1.tgz 0ms (cache hit)
+27 http cache lamejs@https://registry.npmjs.org/lamejs/-/lamejs-1.2.1.tgz 0ms (cache hit)
+28 silly tarball no local data for use-strict@https://registry.npmjs.org/use-strict/-/use-strict-1.0.1.tgz. Extracting by manifest.
+29 silly tarball no local data for lamejs@https://registry.npmjs.org/lamejs/-/lamejs-1.2.1.tgz. Extracting by manifest.
+30 http fetch GET 200 https://registry.npmjs.org/use-strict/-/use-strict-1.0.1.tgz 61ms (cache miss)
+31 http fetch GET 200 https://registry.npmjs.org/lamejs/-/lamejs-1.2.1.tgz 246ms (cache miss)
+32 silly ADD node_modules/use-strict
+33 silly ADD node_modules/lamejs
+34 verbose cwd C:\Users\bogus\Desktop\Codex Arbeitsplatz
+35 verbose os Windows_NT 10.0.26200
+36 verbose node v22.20.0
+37 verbose npm  v10.9.3
+38 notice
+38 notice New major version of npm available! 10.9.3 -> 11.16.0
+38 notice Changelog: https://github.com/npm/cli/releases/tag/v11.16.0
+38 notice To update run: npm install -g npm@11.16.0
+38 notice  { force: true, [Symbol(proc-log.meta)]: true }
+39 verbose exit 0
+40 info ok
