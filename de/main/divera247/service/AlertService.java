@@ -1,14 +1,11 @@
-package de.netzkronehd.divera247.service;
+package de.main.divera247.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import de.netzkronehd.divera247.model.AlarmResponse;
-import de.netzkronehd.divera247.model.LastAlarm;
+import de.main.divera247.model.AlarmResponse;
+import de.main.divera247.model.LastAlarm;
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
-import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Frame;
@@ -46,7 +43,6 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
-import javax.swing.Timer;
 import javax.swing.SwingUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +64,6 @@ public class AlertService {
     private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(5))
             .build();
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final Pattern LAT_PATTERN = Pattern.compile("\"lat\"\\s*:\\s*\"([^\"]+)\"");
     private static final Pattern LON_PATTERN = Pattern.compile("\"lon\"\\s*:\\s*\"([^\"]+)\"");
     private static final Pattern COORDINATE_PATTERN = Pattern.compile("(-?\\d{1,2}[.,]\\d+)\\s*[,; ]\\s*(-?\\d{1,3}[.,]\\d+)");
@@ -120,37 +115,22 @@ public class AlertService {
         mapLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 16));
         mapLabel.setPreferredSize(new Dimension(650, 680));
 
-        JButton zoomOutButton = new JButton("-");
-        JButton zoomInButton = new JButton("+");
-        styleMapButton(zoomOutButton);
-        styleMapButton(zoomInButton);
-
-        JPanel mapControls = new JPanel(new BorderLayout(8, 0));
-        mapControls.setOpaque(false);
-        mapControls.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
-        mapControls.add(zoomOutButton, BorderLayout.WEST);
-        mapControls.add(zoomInButton, BorderLayout.EAST);
-
         JPanel mapPane = new JPanel(new BorderLayout());
         mapPane.setOpaque(false);
         mapPane.add(mapLabel, BorderLayout.CENTER);
         mapPane.add(clockPanel(), BorderLayout.NORTH);
-        mapPane.add(mapControls, BorderLayout.SOUTH);
 
         RoundedPanel details = new RoundedPanel(new BorderLayout(0, 18), surfaceColor(), accent, 20);
         details.setPreferredSize(new Dimension(500, 680));
         details.setBorder(BorderFactory.createEmptyBorder(26, 24, 24, 24));
         details.add(headerPanel(alarm, dialog, accent), BorderLayout.NORTH);
         details.add(detailBody(alarm, accent, blue), BorderLayout.CENTER);
-        details.add(actionPanel(alarm, blue), BorderLayout.SOUTH);
+        details.add(actionPanel(dialog, blue), BorderLayout.SOUTH);
 
         root.add(mapPane, BorderLayout.CENTER);
         root.add(details, BorderLayout.EAST);
 
-        DashboardMapView mapView = new DashboardMapView(mapLabel, zoomOutButton, zoomInButton, 650, 680);
-        zoomOutButton.addActionListener(event -> mapView.zoomOut());
-        zoomInButton.addActionListener(event -> mapView.zoomIn());
-        loadDashboardMap(alarm, mapView);
+        loadDashboardMap(alarm, mapLabel);
 
         dialog.setContentPane(root);
         dialog.setMinimumSize(new Dimension(1120, 720));
@@ -160,6 +140,7 @@ public class AlertService {
     }
 
     private JPanel clockPanel() {
+        LocalDateTime now = LocalDateTime.now();
         JPanel panel = new JPanel(new BorderLayout(8, 0));
         panel.setOpaque(false);
         panel.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 10));
@@ -170,28 +151,18 @@ public class AlertService {
 
         JPanel textPanel = new JPanel(new GridLayout(2, 1, 0, 0));
         textPanel.setOpaque(false);
-        JLabel time = new JLabel("", SwingConstants.RIGHT);
+        JLabel time = new JLabel(now.format(DateTimeFormatter.ofPattern("HH:mm:ss")), SwingConstants.RIGHT);
         time.setForeground(textColor());
         time.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 20));
-        JLabel date = new JLabel("", SwingConstants.RIGHT);
+        JLabel date = new JLabel(now.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")), SwingConstants.RIGHT);
         date.setForeground(mutedTextColor());
         date.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
         textPanel.add(time);
         textPanel.add(date);
 
-        Timer clockTimer = new Timer(1000, event -> updateClock(time, date));
-        clockTimer.setInitialDelay(0);
-        clockTimer.start();
-
         panel.add(icon, BorderLayout.EAST);
         panel.add(textPanel, BorderLayout.CENTER);
         return panel;
-    }
-
-    private void updateClock(JLabel time, JLabel date) {
-        LocalDateTime now = LocalDateTime.now();
-        time.setText(now.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
-        date.setText(now.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")));
     }
 
     private JPanel headerPanel(LastAlarm alarm, JDialog dialog, Color accent) {
@@ -320,13 +291,12 @@ public class AlertService {
         return tile;
     }
 
-    private JPanel actionPanel(LastAlarm alarm, Color blue) {
+    private JPanel actionPanel(JDialog dialog, Color blue) {
         JPanel actions = new JPanel(new GridLayout(1, 2, 14, 0));
         actions.setOpaque(false);
         JButton map = actionButton(text("AUF KARTE ANZEIGEN", "SHOW ON MAP"), blue, Color.WHITE, true);
         JButton open = actionButton(text("EINSATZ OEFFNEN", "OPEN ALERT"), surfaceAltColor(), textColor(), false);
-        map.addActionListener(event -> openMap(alarm));
-        open.addActionListener(event -> openDivera());
+        open.addActionListener(event -> dialog.dispose());
         actions.add(map);
         actions.add(open);
         return actions;
@@ -357,58 +327,24 @@ public class AlertService {
         return valueOrFallback(value, "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
-    private void openMap(LastAlarm alarm) {
-        Thread browserThread = new Thread(() -> {
-            try {
-                Coordinates coordinates = findCoordinates(alarm);
-                String url = "https://www.openstreetmap.org/?mlat=" + coordinates.lat
-                        + "&mlon=" + coordinates.lon
-                        + "#map=17/" + coordinates.lat + "/" + coordinates.lon;
-                openBrowser(url);
-            } catch (Exception exception) {
-                String address = valueOrFallback(alarm.getAddress(), alarm.getText());
-                if (isBlank(address)) {
-                    log.warn("Cannot open map without address.", exception);
-                    return;
-                }
-                String query = URLEncoder.encode(address, StandardCharsets.UTF_8);
-                openBrowser("https://www.openstreetmap.org/search?query=" + query);
-            }
-        }, "divera-map-browser");
-        browserThread.setDaemon(true);
-        browserThread.start();
-    }
-
-    private void openDivera() {
-        openBrowser("https://app.divera247.com/");
-    }
-
-    private void openBrowser(String url) {
-        try {
-            if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-                log.warn("Desktop browser action is not supported.");
-                return;
-            }
-            Desktop.getDesktop().browse(URI.create(url));
-        } catch (Exception exception) {
-            log.warn("Failed to open browser URL: {}", url, exception);
-        }
-    }
-
-    private void loadDashboardMap(LastAlarm alarm, DashboardMapView mapView) {
+    private void loadDashboardMap(LastAlarm alarm, JLabel mapLabel) {
         String address = valueOrFallback(alarm.getAddress(), "");
         if (isBlank(address)) {
-            mapView.showMessage(text("Keine Adresse vorhanden", "No address available"));
+            mapLabel.setText(text("Keine Adresse vorhanden", "No address available"));
             return;
         }
 
         Thread mapThread = new Thread(() -> {
             try {
                 Coordinates coordinates = findCoordinates(alarm);
-                mapView.setCoordinates(coordinates);
+                BufferedImage map = renderDashboardMap(coordinates, config.defaultMapZoom(), 650, 680);
+                SwingUtilities.invokeLater(() -> {
+                    mapLabel.setText(null);
+                    mapLabel.setIcon(new ImageIcon(map));
+                });
             } catch (Exception exception) {
                 log.warn("Failed to load map for address: {}", alarm.getAddress(), exception);
-                SwingUtilities.invokeLater(() -> mapView.showError());
+                SwingUtilities.invokeLater(() -> mapLabel.setText(text("Karte konnte nicht geladen werden", "Map could not be loaded")));
             }
         }, "divera-dashboard-map-loader");
         mapThread.setDaemon(true);
@@ -649,6 +585,7 @@ public class AlertService {
         Set<String> candidates = new LinkedHashSet<>();
         addAddressCandidate(candidates, alarm.getAddress());
         addAddressCandidate(candidates, alarm.getText());
+        addAddressCandidate(candidates, alarm.getTitle());
         return candidates;
     }
 
@@ -668,12 +605,10 @@ public class AlertService {
         }
 
         candidates.add(normalized);
-        if (!normalized.toLowerCase().contains("deutschland")) {
-            candidates.add(normalized + ", Deutschland");
-        }
+        candidates.add(normalized + ", Deutschland");
 
         String[] parts = normalized.split("[,;]");
-        if (parts.length > 1 && parts[0].trim().length() >= 5) {
+        if (parts.length > 0 && parts[0].trim().length() >= 5) {
             candidates.add(parts[0].trim());
             candidates.add(parts[0].trim() + ", Deutschland");
         }
@@ -682,7 +617,7 @@ public class AlertService {
     private Coordinates geocode(String address) throws IOException, InterruptedException {
         String query = URLEncoder.encode(address, StandardCharsets.UTF_8);
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countrycodes=de&accept-language=de&q=" + query))
+                .uri(URI.create("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=de&accept-language=de&q=" + query))
                 .timeout(Duration.ofSeconds(8))
                 .header("User-Agent", "divera247-poller/1.0")
                 .build();
@@ -690,68 +625,12 @@ public class AlertService {
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
             throw new IOException("Geocoding failed with status " + response.statusCode());
         }
-
-        JsonNode results = OBJECT_MAPPER.readTree(response.body());
-        if (!results.isArray() || results.isEmpty()) {
+        Matcher latMatcher = LAT_PATTERN.matcher(response.body());
+        Matcher lonMatcher = LON_PATTERN.matcher(response.body());
+        if (!latMatcher.find() || !lonMatcher.find()) {
             throw new IOException("Address not found");
         }
-
-        JsonNode bestResult = null;
-        int bestScore = Integer.MIN_VALUE;
-        for (JsonNode result : results) {
-            int score = scoreGeocodeResult(address, result);
-            if (bestResult == null || score > bestScore) {
-                bestResult = result;
-                bestScore = score;
-            }
-        }
-
-        if (bestResult == null || bestResult.path("lat").isMissingNode() || bestResult.path("lon").isMissingNode()) {
-            throw new IOException("Address not found");
-        }
-        return new Coordinates(bestResult.path("lat").asDouble(), bestResult.path("lon").asDouble());
-    }
-
-    private int scoreGeocodeResult(String query, JsonNode result) {
-        String lowerQuery = valueOrFallback(query, "").toLowerCase();
-        String displayName = result.path("display_name").asText("").toLowerCase();
-        String resultClass = result.path("class").asText("").toLowerCase();
-        String type = result.path("type").asText("").toLowerCase();
-        JsonNode address = result.path("address");
-
-        int score = (int) Math.round(result.path("importance").asDouble(0.0) * 100.0);
-        if ("house".equals(type) || "building".equals(resultClass) || address.hasNonNull("house_number")) {
-            score += 700;
-        }
-        if ("highway".equals(resultClass) || address.hasNonNull("road")) {
-            score += 300;
-        }
-        if ("boundary".equals(resultClass) || "administrative".equals(type) || "place".equals(resultClass)) {
-            score -= 300;
-        }
-
-        Matcher houseNumberMatcher = Pattern.compile("\\b\\d+[a-zA-Z]?\\b").matcher(lowerQuery);
-        while (houseNumberMatcher.find()) {
-            if (displayName.contains(houseNumberMatcher.group())) {
-                score += 250;
-            }
-        }
-
-        String road = address.path("road").asText("").toLowerCase();
-        if (!isBlank(road) && lowerQuery.contains(road)) {
-            score += 180;
-        }
-        String city = firstNonBlank(
-                address.path("city").asText(""),
-                address.path("town").asText(""),
-                address.path("village").asText(""),
-                address.path("municipality").asText("")
-        ).toLowerCase();
-        if (!isBlank(city) && lowerQuery.contains(city)) {
-            score += 120;
-        }
-
-        return score;
+        return new Coordinates(Double.parseDouble(latMatcher.group(1)), Double.parseDouble(lonMatcher.group(1)));
     }
 
     private BufferedImage renderMap(Coordinates coordinates, int zoom) throws IOException {
@@ -788,16 +667,12 @@ public class AlertService {
     private BufferedImage renderDashboardMap(Coordinates coordinates, int zoom, int width, int height) throws IOException {
         int tileSize = 256;
         double scale = Math.pow(2, zoom);
-        double centerTileX = lonToTileX(coordinates.lon, scale);
-        double centerTileY = latToTileY(coordinates.lat, scale);
-        double centerPixelX = centerTileX * tileSize;
-        double centerPixelY = centerTileY * tileSize;
-        double topLeftPixelX = centerPixelX - width / 2.0;
-        double topLeftPixelY = centerPixelY - height / 2.0;
+        double centerX = (coordinates.lon + 180.0) / 360.0 * scale;
+        double centerY = (1.0 - Math.log(Math.tan(Math.toRadians(coordinates.lat)) + 1.0 / Math.cos(Math.toRadians(coordinates.lat))) / Math.PI) / 2.0 * scale;
         int tileColumns = (int) Math.ceil(width / (double) tileSize) + 2;
         int tileRows = (int) Math.ceil(height / (double) tileSize) + 2;
-        int startTileX = (int) Math.floor(topLeftPixelX / tileSize);
-        int startTileY = (int) Math.floor(topLeftPixelY / tileSize);
+        int startTileX = (int) Math.floor(centerX - tileColumns / 2.0);
+        int startTileY = (int) Math.floor(centerY - tileRows / 2.0);
 
         BufferedImage map = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         Graphics2D graphics = map.createGraphics();
@@ -809,8 +684,8 @@ public class AlertService {
                 int tileX = startTileX + x;
                 int tileY = startTileY + y;
                 BufferedImage tile = readTile(zoom, tileX, tileY);
-                int drawX = (int) Math.round(tileX * tileSize - topLeftPixelX);
-                int drawY = (int) Math.round(tileY * tileSize - topLeftPixelY);
+                int drawX = (int) Math.round((tileX - centerX) * tileSize + width / 2.0);
+                int drawY = (int) Math.round((tileY - centerY) * tileSize + height / 2.0);
                 graphics.drawImage(tile, drawX, drawY, null);
             }
         }
@@ -819,19 +694,9 @@ public class AlertService {
         graphics.fillRect(0, 0, width, height);
         graphics.setPaint(new GradientPaint(width - 240, 0, new Color(2, 18, 32, 30), width, 0, new Color(2, 18, 32, 210)));
         graphics.fillRect(0, 0, width, height);
-        int markerX = (int) Math.round(lonToTileX(coordinates.lon, scale) * tileSize - topLeftPixelX);
-        int markerY = (int) Math.round(latToTileY(coordinates.lat, scale) * tileSize - topLeftPixelY);
-        drawDashboardMarker(graphics, markerX, markerY);
+        drawDashboardMarker(graphics, width / 2, height / 2);
         graphics.dispose();
         return map;
-    }
-
-    private double lonToTileX(double lon, double scale) {
-        return (lon + 180.0) / 360.0 * scale;
-    }
-
-    private double latToTileY(double lat, double scale) {
-        return (1.0 - Math.log(Math.tan(Math.toRadians(lat)) + 1.0 / Math.cos(Math.toRadians(lat))) / Math.PI) / 2.0 * scale;
     }
 
     private BufferedImage readTile(int zoom, int tileX, int tileY) throws IOException {
@@ -912,15 +777,6 @@ public class AlertService {
         return value == null || value.trim().isEmpty();
     }
 
-    private String firstNonBlank(String... values) {
-        for (String value : values) {
-            if (!isBlank(value)) {
-                return value;
-            }
-        }
-        return "";
-    }
-
     private class MapView {
         private final JLabel mapLabel;
         private final JButton zoomOutButton;
@@ -987,93 +843,6 @@ public class AlertService {
             mapLabel.setIcon(null);
             mapLabel.setText(text("Karte konnte nicht geladen werden", "Map could not be loaded"));
             setButtonsEnabled(false);
-        }
-
-        private void updateButtons() {
-            zoomOutButton.setEnabled(coordinates != null && zoom > config.minMapZoom());
-            zoomInButton.setEnabled(coordinates != null && zoom < config.maxMapZoom());
-        }
-
-        private void setButtonsEnabled(boolean enabled) {
-            zoomOutButton.setEnabled(enabled);
-            zoomInButton.setEnabled(enabled);
-        }
-    }
-
-    private class DashboardMapView {
-        private final JLabel mapLabel;
-        private final JButton zoomOutButton;
-        private final JButton zoomInButton;
-        private final int width;
-        private final int height;
-        private Coordinates coordinates;
-        private int zoom = config.defaultMapZoom();
-
-        private DashboardMapView(JLabel mapLabel, JButton zoomOutButton, JButton zoomInButton, int width, int height) {
-            this.mapLabel = mapLabel;
-            this.zoomOutButton = zoomOutButton;
-            this.zoomInButton = zoomInButton;
-            this.width = width;
-            this.height = height;
-            setButtonsEnabled(false);
-        }
-
-        private void setCoordinates(Coordinates coordinates) {
-            this.coordinates = coordinates;
-            setButtonsEnabled(true);
-            reload();
-        }
-
-        private void zoomOut() {
-            if (coordinates == null || zoom <= config.minMapZoom()) {
-                return;
-            }
-            zoom--;
-            reload();
-        }
-
-        private void zoomIn() {
-            if (coordinates == null || zoom >= config.maxMapZoom()) {
-                return;
-            }
-            zoom++;
-            reload();
-        }
-
-        private void reload() {
-            Coordinates currentCoordinates = coordinates;
-            int currentZoom = zoom;
-            SwingUtilities.invokeLater(() -> {
-                mapLabel.setIcon(null);
-                mapLabel.setText(text("Karte wird geladen...", "Loading map..."));
-                updateButtons();
-            });
-
-            Thread renderThread = new Thread(() -> {
-                try {
-                    BufferedImage map = renderDashboardMap(currentCoordinates, currentZoom, width, height);
-                    SwingUtilities.invokeLater(() -> {
-                        mapLabel.setText(null);
-                        mapLabel.setIcon(new ImageIcon(map));
-                        updateButtons();
-                    });
-                } catch (Exception exception) {
-                    log.warn("Failed to render dashboard map", exception);
-                    SwingUtilities.invokeLater(() -> showError());
-                }
-            }, "divera-dashboard-map-renderer");
-            renderThread.setDaemon(true);
-            renderThread.start();
-        }
-
-        private void showMessage(String message) {
-            mapLabel.setIcon(null);
-            mapLabel.setText(message);
-            setButtonsEnabled(false);
-        }
-
-        private void showError() {
-            showMessage(text("Karte konnte nicht geladen werden", "Map could not be loaded"));
         }
 
         private void updateButtons() {
