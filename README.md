@@ -1,5 +1,6 @@
-# Divera247 Poller
+
 ![Logo](img/divera247_long.png)
+# Divera247 Poller
 
 Desktop notification tool for [Divera 24/7](https://app.divera247.com/login.html) alarms — monitor one or more organizations via the Divera Web API and receive instant notifications for new incidents.
 
